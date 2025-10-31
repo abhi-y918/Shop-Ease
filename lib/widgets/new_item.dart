@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shop_ease/Data/categories.dart';
+import 'package:shop_ease/models/category.dart';
+import 'package:shop_ease/models/grocery_item.dart';
+import 'package:http/http.dart'as http;
 
 
 class NewItem extends StatefulWidget{
@@ -12,6 +15,25 @@ class NewItem extends StatefulWidget{
 }
 
 class _NewItemState extends State<NewItem>{
+  final _formkey = GlobalKey<FormState>();
+  var _enteredname = '';
+  var _enteredquantity = 1;
+  var _selectedcategory = categories[Categories.vegetables]!;
+
+  void _saveItem(){
+    if(_formkey.currentState!.validate()){
+      _formkey.currentState!.save();
+      Navigator.of(context).pop(
+        GroceryItem(
+          id: DateTime.now().toString(),
+          name: _enteredname,
+          quantity: _enteredquantity,
+          category: _selectedcategory,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,6 +43,7 @@ class _NewItemState extends State<NewItem>{
       body: Padding(
         padding: const  EdgeInsets.all(12),
         child: Form(
+          key:_formkey,
           child: Column(
             children: [
               TextFormField(
@@ -37,6 +60,12 @@ class _NewItemState extends State<NewItem>{
                   }
                   return null;
                 },
+                onSaved: (value){
+                  // if(value== null){
+                  //   return;
+                  // }
+                  _enteredname = value!;
+                },
               ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -46,7 +75,8 @@ class _NewItemState extends State<NewItem>{
                       decoration: const InputDecoration(
                       label: Text('Quality'),
                       ),
-                      initialValue: '1',
+                      keyboardType: TextInputType.number,
+                      initialValue: _enteredquantity.toString(),
                       validator: (value){
                         if(value==null ||
                             value.isEmpty ||
@@ -56,27 +86,38 @@ class _NewItemState extends State<NewItem>{
                         }
                         return null;
                       },//it works as string
+                      onSaved: (value){
+                        _enteredquantity  = int.parse(value!);
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: DropdownButtonFormField(items: [
-                      for(final category in categories.entries)
-                        DropdownMenuItem(
-                          value: category.value,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 16,
-                                height: 16,
-                                color: category.value.color,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(category.value.title),
-                            ],
+                    child: DropdownButtonFormField(
+                      value : _selectedcategory,
+                      items: [
+                        for(final category in categories.entries)
+                          DropdownMenuItem(
+                            value: category.value,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  color: category.value.color,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(category.value.title),
+                              ],
+                            ),
                           ),
-                        ),
-                    ], onChanged: (value){}), // more specific than the dropdownbuttonfield
+                      ],
+                      onChanged: (value){
+                        setState(() {
+                          _selectedcategory = value!;
+                        });
+                        },
+                    ), // more specific than the dropdownbuttonfield
                   ),
                 ],
               ),
@@ -85,11 +126,13 @@ class _NewItemState extends State<NewItem>{
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: (){},
+                    onPressed: (){
+                      _formkey.currentState!.reset();
+                    },
                     child: const Text('Reset'),
                   ),
                   ElevatedButton(
-                    onPressed: (){},
+                    onPressed: _saveItem,
                     child: const  Text('Add Item'),
                   )
                 ],
